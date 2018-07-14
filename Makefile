@@ -1,9 +1,9 @@
-GPU=0
+GPU=1
 CUDNN=0
 CUDNN_HALF=0
 OPENCV=0
 AVX=0
-OPENMP=0
+OPENMP=1
 LIBSO=0
 
 # set GPU=1 and CUDNN=1 to speedup on GPU
@@ -76,12 +76,12 @@ LDFLAGS+= -lgomp
 endif
 
 ifeq ($(GPU), 1)
-COMMON+= -DGPU -I/usr/local/cuda/include/
+COMMON+= -DGPU -I/export/home/csachweh/.local/cuda-9.1/include/
 CFLAGS+= -DGPU
 ifeq ($(OS),Darwin) #MAC
 LDFLAGS+= -L/usr/local/cuda/lib -lcuda -lcudart -lcublas -lcurand
 else
-LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
+LDFLAGS+= -L/export/home/csachweh/.local/cuda-9.1/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
 endif
 
