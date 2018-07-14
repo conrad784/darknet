@@ -1,0 +1,5 @@
+classes=1
+train = data/maya-train.txt
+valid = data/maya-test.txt
+names = data/maya.names
+backup = backup/
