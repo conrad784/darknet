@@ -1,5 +1,15 @@
-## mark glyphs
+## mark glyphs (https://github.com/AlexeyAB/Yolo_mark)
 ./yolo_mark ~/Maya_Landesbibliothek ~/transfer/git/darknet/data/maya.txt ~/transfer/git/darknet/data/maya.names
 
 ## train network
-./darknet-{gpu,openmp} detector train data/maya.data cfg/yolo-maya.cfg data/darknet53.conv.74 -dont_show -gpus 1,2,3,4,5,6,7
+./darknet-{gpu,openmp} detector train data/maya.data cfg/yolo-maya.cfg data/darknet53.conv.74 -dont_show -gpus 1,2,...
+
+## test network
+./darknet detector test data/maya.data cfg/yolo-maya.cfg backup/yolo-maya_512.weights -i 0 -thresh 0.1 ~/Maya_Landesbibliothek.small/00000021.tif.original.jpg
+
+./darknet-nolabel detector test data/maya.data cfg/yolo-maya-testing.cfg backup/yolo-maya_700.weights -thresh 0.1 ~/Maya_Landesbibliothek.small.split/1part_00000074.tif.original.jpg
+
+
+### misc
+-i is index of GPU used
+use -gpus with max 4 GPUs as this is already a hack (https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ)
