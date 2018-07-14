@@ -1,0 +1,5 @@
+## mark glyphs
+./yolo_mark ~/Maya_Landesbibliothek ~/transfer/git/darknet/data/maya.txt ~/transfer/git/darknet/data/maya.names
+
+## train network
+./darknet-{gpu,openmp} detector train data/maya.data cfg/yolo-maya.cfg data/darknet53.conv.74 -dont_show -gpus 1,2,3,4,5,6,7
