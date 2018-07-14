@@ -151,7 +151,7 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
         for(i = 0; i < w && i + c < a.w; ++i){
             for(k = 0; k < label.c; ++k){
                 float val = get_pixel(label, i, j, k);
-                set_pixel(a, i+c, j+r, k, rgb[k] * val);
+                //set_pixel(a, i+c, j+r, k, rgb[k] * val);
             }
         }
     }
