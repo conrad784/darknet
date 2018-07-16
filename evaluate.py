@@ -34,6 +34,7 @@ def create_rect(dn_str):
     return matplotlib.patches.Rectangle((int(left_x), int(top_y)), int(width), int(height),
                                         fill=False, edgecolor='red', linewidth=2)
 
+
 def draw_bboxes(img, regions):
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.imshow(img)
@@ -90,7 +91,6 @@ if __name__ == "__main__":
 
     print("[INFO] now evaluating result files")
 
-
     from collections import defaultdict
     import skimage.io
     for weigth, result in tqdm(zip(weight, results)):
@@ -115,6 +115,9 @@ if __name__ == "__main__":
                 print(f"[INFO] {eval_file} already exists, skipping...")
             else:
                 img = skimage.io.imread(key)
-                fig, ax = draw_bboxes(img, boxes)
-                fig.savefig(eval_file)
-                plt.close()
+                try:
+                    fig, ax = draw_bboxes(img, boxes)
+                    fig.savefig(eval_file)
+                    plt.close()
+                except Exception as e:
+                    print(f"[ERROR] {e}")
