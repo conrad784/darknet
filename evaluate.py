@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     from collections import defaultdict
     import skimage.io
-    for weigth, result in tqdm(zip(weight, results)):
+    for weight, result in tqdm(zip(weights, results)):
         glyphs = defaultdict(list)
         # we got a list of text here
         for i in range(len(result)):
