@@ -1,3 +1,6 @@
+## run coco classification
+./darknet detector test data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 1 data/dog.jpg 
+
 ## mark glyphs (https://github.com/AlexeyAB/Yolo_mark)
 ./yolo_mark ~/Maya_Landesbibliothek ~/transfer/git/darknet/data/maya.txt ~/transfer/git/darknet/data/maya.names
 
