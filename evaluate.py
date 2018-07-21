@@ -100,38 +100,65 @@ class MayaImg():
     def __str__(self):
         return f"{self.path}"
 
-    def get_iou(self):
+    def get_metrics(self):
         if not self.ground_truth:
             print("[ERROR] no ground truth available")
             return
         self.intersections = []
+        self.precision = []
+        self.recall = []
+
         for i, box in enumerate(self.found_boxes):
             box = Rectangle(box)
+            # there seems to be the issue of bounding boxes with either width or height = 0
+            if not box.area:
+                continue
             for j, region in enumerate(self.ground_truth):
                 rect = Rectangle(region)
                 if rect.intersects(box):
+                    # get iou stuff
+                    if not box.area:
+                        import pdb
+                        pdb.set_trace()
                     overlap = rect.get_overlap(box)
                     iou = overlap / (box.area+rect.area-overlap)
                     if args.verbose > 4:
                         print(f"[DEBUG] iou ({i},{j}): {iou}")
                     self.intersections.append((iou, (i, j)))
+
+                    # get precision
+                    precision = overlap / box.area
+                    self.precision.append((precision, (i, j)))
+                    # get recall
+                    recall = overlap / rect.area
+                    self.recall.append((recall,  (i, j)))
+
         # sanity check
         if len(self.intersections) > len(self.ground_truth):
-            print(f"[ERROR] too many intersections: {self.intersections}")
-        return self.intersections
+            # this usually happens for very bad predictions, e.g. batch iteration < 500
+            if args.verbose > 4:
+                print(f"[ERROR] too many intersections found: {self.name}")
 
-    def get_accuracy(self):
+    def get_accuracy(self, text=False):
         try:
             _ = self.intersections
         except AttributeError:
-            _ = self.get_iou()
-        return f"{len(self.intersections)}/{len(self.ground_truth)}"
+            self.get_metrics()
+        if text:
+            return f"{len(self.intersections)}/{len(self.ground_truth)}"
+        else:
+            ret = len(self.intersections)/len(self.ground_truth)
+            # little sanity check
+            if ret <= 1:
+                return ret
+            else:
+                return 0
 
     def get_mean_iou(self):
         try:
             _ = self.intersections
         except AttributeError:
-            _ = self.get_iou()
+            self.get_metrics()
 
         ious = [x[0] for x in self.intersections]
         if ious:
@@ -139,6 +166,19 @@ class MayaImg():
         else:
             return 0
 
+    def get_precision(self):
+        try:
+            _ = self.precision
+        except AttributeError:
+            self.get_metrics()
+        return self.precision
+
+    def get_recall(self):
+        try:
+            _ = self.recall
+        except AttributeError:
+            self.get_metrics()
+        return self.recall
 
 # utility functions
 def create_rect(t, color='red'):
@@ -269,7 +309,7 @@ if __name__ == "__main__":
             with open(result_file, "r") as fd:
                 results.append(fd.readlines())
 
-        print("[INFO] now evaluating result files")
+        print("[INFO] now evaluating result files and creating images")
 
         if not os.path.exists(f"evaluation/{args.storefolder}"):
             os.mkdir(f"evaluation/{args.storefolder}")
@@ -308,7 +348,7 @@ if __name__ == "__main__":
                         print(f"[ERROR] {e}")
 
                 if ground_truth:
-                    # we got a labeled image here, lets calculate accuracy
+                    # we got a labeled image here, lets calculate some metrics
                     myimg = MayaImg(key)
                     myimg.ground_truth = ground_truth
                     myimg.found_boxes = boxes_sane
@@ -318,25 +358,33 @@ if __name__ == "__main__":
             pickle.dump(glyph_storage, fd)
 
     # only evaluation from here on
-    if not glyph_storage:
+    if not glyph_storage: # load old pickle, because we only want to evaluate and not generate new
         with open("glyph_storage.pickle", "rb") as fd:
             glyph_storage = pickle.load(fd)
 
     weight_statistic = defaultdict(dict)
     for w, data in glyph_storage.items():
         lweight = int(w.split("_")[-1].split(".")[0])
+        weight_statistic[lweight]["img"] = []
+        weight_statistic[lweight]["iou"] = []
+        weight_statistic[lweight]["accuracy"] = []
         for im in data:
-            if im.ground_truth:  # only evaluate if there is actual ground-truth
-                ac = im.get_accuracy()
+            if im.ground_truth:  # only evaluate if ground truth available
+                weight_statistic[lweight]["img"].append(im)
 
+                ac = im.get_accuracy()
                 mean_iou = im.get_mean_iou()
-                weight_statistic[lweight]["mean_iou"] = mean_iou
-                weight_statistic[lweight]["accuracy"] = ac
+                weight_statistic[lweight]["iou"].append(mean_iou)
+                weight_statistic[lweight]["accuracy"].append(ac)
 
     iou_over_batches = []
+    accuracy_over_batches = []
     for w in sorted(weight_statistic.keys()):
-        iou_over_batches.append([w, weight_statistic[w].get("mean_iou")])
-        print(f"{w} accuracy: {weight_statistic[w].get('accuracy')}")
+        iou = np.array(weight_statistic[w].get("iou")).mean()
+        acc = np.array(weight_statistic[w].get("accuracy")).mean()
+        iou_over_batches.append([w, iou])
+        accuracy_over_batches.append([w, acc])
+        print(f"{w} accuracy: {acc}")
 
     iou_over_batches = np.array(iou_over_batches)
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -349,3 +397,21 @@ if __name__ == "__main__":
     ax.legend()
     ax.set_title("IoU over training batches")
     fig.savefig("plots/iou_over_batches.png")
+
+    accuracy_over_batches = np.array(accuracy_over_batches)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.plot(accuracy_over_batches[:,0], accuracy_over_batches[:,1])
+    ax.axhline(y=accuracy_over_batches[:,1].mean(), label='mean accuracy')
+    ax.set_ylim(ymin=0)
+    ax.set_xlim(xmin=0)
+    ax.set_xlabel("Batch number")
+    ax.set_ylabel("Accuracy")
+    ax.legend()
+    ax.set_title("Accuracy over training batches")
+    fig.savefig("plots/accuracy_over_batches.png")
+
+    best_batch_iou, best_iou = iou_over_batches[np.argmax(iou_over_batches[:,1])]
+    print(f"[INFO] best batch was {best_batch_iou} with IoU: {best_iou}")
+
+    best_batch_acc, best_acc = accuracy_over_batches[np.argmax(accuracy_over_batches[:,1])]
+    print(f"[INFO] best batch was {best_batch_acc} with accuracy: {best_acc}")
