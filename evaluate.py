@@ -107,6 +107,7 @@ class MayaImg():
         self.intersections = []
         self.precision = []
         self.recall = []
+        self.iou = []
 
         for i, box in enumerate(self.found_boxes):
             box = Rectangle(box)
@@ -124,7 +125,18 @@ class MayaImg():
                     iou = overlap / (box.area+rect.area-overlap)
                     if args.verbose > 4:
                         print(f"[DEBUG] iou ({i},{j}): {iou}")
-                    self.intersections.append((iou, (i, j)))
+                    # test if better than already found intersection
+                    idx = -1
+                    for i, p in enumerate(self.intersections):
+                        if (i, j) == p:
+                            if iou > self.iou[i]:
+                                idx = i
+                    if idx > -1:
+                        self.intersections[idx] = (i,j)
+                        self.iou[idx] = iou
+                    else:
+                        self.intersections.append((iou, (i, j)))
+                        self.iou.append(iou)
 
                     # get precision
                     precision = overlap / box.area
@@ -132,6 +144,7 @@ class MayaImg():
                     # get recall
                     recall = overlap / rect.area
                     self.recall.append((recall,  (i, j)))
+
 
         # sanity check
         if len(self.intersections) > len(self.ground_truth):
@@ -415,3 +428,12 @@ if __name__ == "__main__":
 
     best_batch_acc, best_acc = accuracy_over_batches[np.argmax(accuracy_over_batches[:,1])]
     print(f"[INFO] best batch was {best_batch_acc} with accuracy: {best_acc}")
+
+    interest_batch = glyph_storage[f"yolo-maya_{int(best_batch_acc)}.weights"]
+
+    print(f"Evaluating for batch {best_batch_acc}")
+    for im in interest_batch:
+        print(f"{im.name}")
+        print("found {}".format(im.get_accuracy(text=True)))
+        print("Recall:", np.array([x[0] for x in im.recall]).mean())
+        print("Precision:", np.array([x[0] for x in im.precision]).mean())
