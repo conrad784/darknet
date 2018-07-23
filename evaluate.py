@@ -132,7 +132,7 @@ class MayaImg():
                             if iou > self.iou[i]:
                                 idx = i
                     if idx > -1:
-                        self.intersections[idx] = (i,j)
+                        self.intersections[idx] = (i, j)
                         self.iou[idx] = iou
                     else:
                         self.intersections.append((iou, (i, j)))
@@ -144,7 +144,6 @@ class MayaImg():
                     # get recall
                     recall = overlap / rect.area
                     self.recall.append((recall,  (i, j)))
-
 
         # sanity check
         if len(self.intersections) > len(self.ground_truth):
@@ -192,6 +191,7 @@ class MayaImg():
         except AttributeError:
             self.get_metrics()
         return self.recall
+
 
 # utility functions
 def create_rect(t, color='red'):
@@ -371,7 +371,7 @@ if __name__ == "__main__":
             pickle.dump(glyph_storage, fd)
 
     # only evaluation from here on
-    if not glyph_storage: # load old pickle, because we only want to evaluate and not generate new
+    if not glyph_storage:  # load old pickle, because we only want to evaluate and not generate new
         with open("glyph_storage.pickle", "rb") as fd:
             glyph_storage = pickle.load(fd)
 
@@ -401,7 +401,7 @@ if __name__ == "__main__":
 
     iou_over_batches = np.array(iou_over_batches)
     fig, ax = plt.subplots(figsize=(10, 10))
-    ax.plot(iou_over_batches[:,0], iou_over_batches[:,1])
+    ax.plot(iou_over_batches[:, 0], iou_over_batches[:, 1])
     ax.axhline(y=0.5, color='red', label='IoU limit')
     ax.set_ylim(ymin=0)
     ax.set_xlim(xmin=0)
@@ -413,8 +413,8 @@ if __name__ == "__main__":
 
     accuracy_over_batches = np.array(accuracy_over_batches)
     fig, ax = plt.subplots(figsize=(10, 10))
-    ax.plot(accuracy_over_batches[:,0], accuracy_over_batches[:,1])
-    ax.axhline(y=accuracy_over_batches[:,1].mean(), label='mean accuracy')
+    ax.plot(accuracy_over_batches[:, 0], accuracy_over_batches[:, 1])
+    ax.axhline(y=accuracy_over_batches[:, 1].mean(), label='mean accuracy')
     ax.set_ylim(ymin=0)
     ax.set_xlim(xmin=0)
     ax.set_xlabel("Batch number")
@@ -423,10 +423,10 @@ if __name__ == "__main__":
     ax.set_title("Accuracy over training batches")
     fig.savefig("plots/accuracy_over_batches.png")
 
-    best_batch_iou, best_iou = iou_over_batches[np.argmax(iou_over_batches[:,1])]
+    best_batch_iou, best_iou = iou_over_batches[np.argmax(iou_over_batches[:, 1])]
     print(f"[INFO] best batch was {best_batch_iou} with IoU: {best_iou}")
 
-    best_batch_acc, best_acc = accuracy_over_batches[np.argmax(accuracy_over_batches[:,1])]
+    best_batch_acc, best_acc = accuracy_over_batches[np.argmax(accuracy_over_batches[:, 1])]
     print(f"[INFO] best batch was {best_batch_acc} with accuracy: {best_acc}")
 
     interest_batch = glyph_storage[f"yolo-maya_{int(best_batch_acc)}.weights"]
