@@ -29,3 +29,6 @@ Thumbs.db
 # CMake #
 cmake-build-debug/
 CMakeLists.txt
+
+*.pickle
+backup*/
