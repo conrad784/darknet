@@ -11,6 +11,10 @@ SYNOPSIS
 DESCRIPTION
         none
 
+README
+        this script requires python >=3.6
+        read the FILES section and commands.HOWTO
+
 FILES
         1. compile yourself a (cuda) version of darknet[https://github.com/AlexeyAB/darknet],
            I personally removed the label creation in the source code too as we only got one class
