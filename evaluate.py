@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# (C) 2018 Conrad Sachweh
+# (C) 2018 Conrad Sachweh, Felix Feldmann
 
 """NAME
-        %(prog)s - <description>
+        %(prog)s - evaluate all epochs of YOLO training
 
 SYNOPSIS
         %(prog)s [--help]
@@ -12,7 +12,22 @@ DESCRIPTION
         none
 
 FILES
-        none
+        1. compile yourself a (cuda) version of darknet[https://github.com/AlexeyAB/darknet],
+           I personally removed the label creation in the source code too as we only got one class
+           --- a/src/image.c
+           +++ b/src/image.c
+           @@ -151,7 +151,7 @@ void draw_label(image a, int r, int c, image label, const float *rgb)
+                    for(i = 0; i < w && i + c < a.w; ++i){
+                        for(k = 0; k < label.c; ++k){
+                            float val = get_pixel(label, i, j, k);
+           -                set_pixel(a, i+c, j+r, k, rgb[k] * val);
+           +                //set_pixel(a, i+c, j+r, k, rgb[k] * val);
+                        }
+                    }
+                }
+           provide path to binary to variable 'DARKNET_BIN'
+        2. data file named 'maya.data' in folder data/
+        3. text file with test images path and corresponding ground truth data
 
 SEE ALSO
         nothing
@@ -24,7 +39,7 @@ BUGS
         none
 
 AUTHOR
-        Conrad Sachweh, conrad@csachweh.de
+        Conrad Sachweh, Felix Feldmann
 """
 DARKNET_BIN = "darknet-nolabel"
 #--------- Classes, Functions, etc ---------------------------------------------
@@ -111,7 +126,7 @@ class MayaImg():
 
         for i, box in enumerate(self.found_boxes):
             box = Rectangle(box)
-            # there seems to be the issue of bounding boxes with either width or height = 0
+            # there seems to be the issue of bounding boxes with either width or height of 0
             if not box.area:
                 continue
             for j, region in enumerate(self.ground_truth):
@@ -125,7 +140,8 @@ class MayaImg():
                     iou = overlap / (box.area+rect.area-overlap)
                     if args.verbose > 4:
                         print(f"[DEBUG] iou ({i},{j}): {iou}")
-                    # test if better than already found intersection
+                    # test if better than already found intersection,
+                    # this is extremely costly, better would be a hash lookup
                     idx = -1
                     for i, p in enumerate(self.intersections):
                         if (i, j) == p:
@@ -291,8 +307,8 @@ if __name__ == "__main__":
                         help='images file (same as for darknet itself)')
     parser.add_argument('-s', '--storefolder', default="unkown",
                         help='specify folder where pictures get stored')
-    parser.add_argument('-gt', '--ground-truth', action='store_true',
-                        help='draw ground-truth on image')
+    parser.add_argument('-ngt', '--no-ground-truth', action='store_true',
+                        help='don\'t draw ground-truth on image')
     parser.add_argument('--only-plot', action='store_true',
                         help='only replot the data')
 
@@ -329,6 +345,7 @@ if __name__ == "__main__":
         for weight, result in tqdm(zip(weights, results)):
             glyphs = defaultdict(list)
             # we got a list of text here
+            # decode it
             for i in range(len(result)):
                 if result[i].startswith("Enter Image Path:"):
                     # now there are glyphs
@@ -354,7 +371,10 @@ if __name__ == "__main__":
                 else:
                     try:
                         img = skimage.io.imread(img_path)
-                        fig, ax = draw_bboxes(img, boxes, ground_truth)
+                        if args.no_ground_truth:
+                            fig, ax = draw_bboxes(img, boxes)
+                        else:
+                            fig, ax = draw_bboxes(img, boxes, ground_truth)
                         fig.savefig(eval_file)
                         plt.close()
                     except Exception as e:
@@ -434,6 +454,6 @@ if __name__ == "__main__":
     print(f"Evaluating for batch {best_batch_acc}")
     for im in interest_batch:
         print(f"{im.name}")
-        print("found {}".format(im.get_accuracy(text=True)))
+        print("found", im.get_accuracy(text=True))
         print("Recall:", np.array([x[0] for x in im.recall]).mean())
         print("Precision:", np.array([x[0] for x in im.precision]).mean())

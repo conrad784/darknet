@@ -1,5 +1,5 @@
-## run coco classification
-./darknet detector test data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 1 data/dog.jpg 
+## run coco classification for testing YOLO only
+./darknet detector test data/coco.data cfg/yolov3.cfg yolov3.weights -thresh 0.75 data/dog.jpg 
 
 ## mark glyphs (https://github.com/AlexeyAB/Yolo_mark)
 ./yolo_mark ~/Maya_Landesbibliothek ~/transfer/git/darknet/data/maya.txt ~/transfer/git/darknet/data/maya.names
@@ -12,7 +12,12 @@
 
 ./darknet-nolabel detector test data/maya.data cfg/yolo-maya-testing.cfg backup/yolo-maya_700.weights -thresh 0.1 ~/Maya_Landesbibliothek.small.split/1part_00000074.tif.original.jpg
 
-
 ### misc
 -i is index of GPU used
 use -gpus with max 4 GPUs as this is already a hack (https://groups.google.com/d/msg/darknet/NbJqonJBTSY/Te5PfIpuCAAJ)
+
+
+
+## evaluate with script
+python3 evaluate.py -w backup/ data/maya-test.txt -s test
+                    <weights folder> <textfile with image paths> -s <storefolder>
